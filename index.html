@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanji Quizlet Mobile</title>
+
+<style>
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:"Times New Roman",serif;
+  background:#eaf4f4;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+
+/* ===== DROPDOWN ===== */
+#lessonSelect{
+  width:94vw;
+  padding:12px;
+  font-size:5vw;
+  border-radius:14px;
+  border:none;
+  margin-bottom:2vh;
+  background:#ffffff;
+  box-shadow:0 6px 14px rgba(0,0,0,0.08);
+  text-align:center;
+  text-align-last:center;
+}
+
+/* ===== CARD ===== */
+.card{
+  width:94vw;
+  height:78vh;
+  background:#fdfefe;
+  border-radius:22px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.15);
+  padding:4vh 4vw;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  cursor:pointer;
+  position:relative;
+}
+
+.front,.back{width:100%;}
+.back{display:none;}
+
+.kanji{
+  font-family:"MS Mincho",serif;
+  font-size:18vw;
+  font-weight:bold;
+  color:#2f5d62;
+}
+
+/* ===== TAG BÀI (XANH DƯƠNG NHẠT) ===== */
+.lesson-tag{
+  position:absolute;
+  right:3.5vw;
+  bottom:2.2vh;
+
+  font-size:4.2vw;
+  color:#2a6fdb;
+  font-weight:bold;
+
+  padding:4px 10px;
+  border-radius:12px;
+  background:rgba(120,170,255,0.25);
+}
+
+/* ===== BACK ===== */
+.reading{
+  font-size:7vw;
+  margin-bottom:2vh;
+  color:#4a7c7d;
+}
+
+.meaning{
+  font-size:6.5vw;
+  font-weight:bold;
+  margin-bottom:2vh;
+}
+
+.divider{
+  border-top:2px solid #9dc5c3;
+  margin:2vh 0;
+}
+
+.kanji-review{
+  font-family:"MS Mincho",serif;
+  font-size:10vw;
+  font-weight:bold;
+  margin-bottom:1vh;
+  color:#2f5d62;
+}
+
+.hanviet{
+  font-size:6vw;
+  font-weight:bold;
+  color:#355f5b;
+}
+
+/* ===== CONTROLS ===== */
+.controls{
+  width:94vw;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  margin-top:2vh;
+}
+
+button{
+  flex:1 1 40%;
+  margin:6px;
+  padding:14px;
+  font-size:5vw;
+  border:none;
+  border-radius:14px;
+  background:#9dc5c3;
+  color:#033;
+}
+button:active{background:#7fb3b0;}
+
+#counter{
+  margin-top:1vh;
+  font-size:4.5vw;
+  color:#355f5b;
+}
+</style>
+</head>
+
+<body>
+
+<select id="lessonSelect" onchange="changeLesson(event)"></select>
+
+<div class="card" onclick="toggleCard()">
+  <div class="front">
+    <div class="kanji" id="kanji"></div>
+  </div>
+
+  <div class="lesson-tag" id="lessonTag" style="display:none;"></div>
+
+  <div class="back">
+    <div class="reading" id="reading"></div>
+    <div class="meaning" id="meaning"></div>
+
+    <div class="divider"></div>
+
+    <div class="kanji-review" id="kanjiReview"></div>
+    <div class="hanviet" id="hanviet"></div>
+  </div>
+</div>
+
+<div id="counter"></div>
+
+<div class="controls">
+  <button onclick="prevCard(event)">◀</button>
+  <button onclick="toggleCard(event)">Lật</button>
+  <button onclick="nextCard(event)">▶</button>
+  <button id="shuffleBtn" onclick="shuffleCards(event)">🔀</button>
+  <button onclick="speak()">🔊 Nghe</button>
+</div>
+
+<script>
+/* ===== DATA ===== */
+const lessons = {
+
+"Bài 03":[
+{kanji:"名前",reading:"なまえ",meaning:"Tên",hanviet:"DANH TIỀN"},
+{kanji:"国",reading:"くに",meaning:"Đất nước",hanviet:"QUỐC"},
+{kanji:"私",reading:"わたし",meaning:"Tôi",hanviet:"TƯ"},
+],
+
+"Bài 04":[
+{kanji:"父",reading:"ちち",meaning:"Cha",hanviet:"PHỤ"},
+{kanji:"母",reading:"はは",meaning:"Mẹ",hanviet:"MẪU"},
+{kanji:"子ども",reading:"こども",meaning:"Con",hanviet:"TỬ"},
+{kanji:"日本",reading:"にほん",meaning:"Nhật Bản",hanviet:"NHẬT BẢN"},
+],
+
+"Bài 05":[
+{kanji:"水",reading:"みず",meaning:"Nước",hanviet:"THỦY"},
+{kanji:"食べます",reading:"たべます",meaning:"Ăn",hanviet:"THỰC"},
+{kanji:"飲みます",reading:"のみます",meaning:"Uống",hanviet:"ẨM"},
+],
+
+"Bài 06":[
+{kanji:"魚",reading:"さかな",meaning:"Cá",hanviet:"NGƯ"},
+{kanji:"肉",reading:"にく",meaning:"Thịt",hanviet:"NHỤC"},
+{kanji:"好き",reading:"すき",meaning:"Thích",hanviet:"HẢO"},
+],
+
+"Bài 07":[
+{kanji:"家",reading:"いえ",meaning:"Nhà",hanviet:"GIA"},
+{kanji:"新しい",reading:"あたらしい",meaning:"Mới",hanviet:"TÂN"},
+{kanji:"広い",reading:"ひろい",meaning:"Rộng",hanviet:"QUÃNG"},
+{kanji:"古い",reading:"ふるい",meaning:"Cũ",hanviet:"CỔ"},
+],
+
+"Bài 08":[
+{kanji:"上",reading:"うえ",meaning:"Trên",hanviet:"THƯỢNG"},
+{kanji:"下",reading:"した",meaning:"Dưới",hanviet:"HẠ"},
+{kanji:"中",reading:"なか",meaning:"Trong",hanviet:"TRUNG"},
+],
+
+"Bài 09":[
+{kanji:"月曜日",reading:"げつようび",meaning:"Thứ 2",hanviet:"NGUYỆT DIỆU NHẬT"},
+{kanji:"火曜日",reading:"かようび",meaning:"Thứ 3",hanviet:"HỎA DIỆU NHẬT"},
+{kanji:"水曜日",reading:"すいようび",meaning:"Thứ 4",hanviet:"THỦY DIỆU NHẬT"},
+{kanji:"木曜日",reading:"もくようび",meaning:"Thứ 5",hanviet:"MỘC DIỆU NHẬT"},
+{kanji:"金曜日",reading:"きんようび",meaning:"Thứ 6",hanviet:"KIM DIỆU NHẬT"},
+{kanji:"土曜日",reading:"どようび",meaning:"Thứ 7",hanviet:"THỔ DIỆU NHẬT"},
+{kanji:"日曜日",reading:"にちようび",meaning:"Chủ nhật",hanviet:"NHẬT DIỆU NHẬT"},
+{kanji:"～曜日",reading:"~ようび",meaning:"Thứ ~",hanviet:"DIỆU NHẬT"},
+],
+
+"Bài 10":[
+{kanji:"朝",reading:"あさ",meaning:"Sáng",hanviet:"TRIỀU"},
+{kanji:"昼",reading:"ひる",meaning:"Trưa",hanviet:"TRÚ"},
+{kanji:"夜",reading:"よる",meaning:"Tối",hanviet:"DẠ"},
+{kanji:"～時",reading:"～じ",meaning:"~ giờ",hanviet:"THỜI"},
+{kanji:"～分",reading:"～ふん／ぷん",meaning:"~ phút",hanviet:"PHÂN"},
+{kanji:"半",reading:"はん",meaning:"Một nửa",hanviet:"BÁN"},
+{kanji:"～枚",reading:"～まい",meaning:"~ tờ, tấm",hanviet:"MAI"},
+],
+
+"Bài 11":[
+{kanji:"読みます",reading:"よみます",meaning:"Đọc",hanviet:"ĐỘC"},
+{kanji:"聞きます",reading:"ききます",meaning:"Nghe, hỏi",hanviet:"VĂN"},
+{kanji:"見ます",reading:"みます",meaning:"Xem, nhìn",hanviet:"KIẾN"},
+{kanji:"本",reading:"ほん",meaning:"Sách",hanviet:"BẢN/BỔN"},
+{kanji:"友だち",reading:"ともだち",meaning:"Bạn bè",hanviet:"HỮU"},
+{kanji:"何",reading:"なん／なに",meaning:"Cái gì",hanviet:"HÀ"},
+],
+
+"Bài 12":[
+{kanji:"～年",reading:"ねん",meaning:"Năm",hanviet:"NIÊN"},
+{kanji:"～月",reading:"～がつ",meaning:"Tháng",hanviet:"NGUYỆT"},
+{kanji:"～日",reading:"～か／にち",meaning:"Ngày",hanviet:"NHẬT"},
+{kanji:"今日",reading:"きょう",meaning:"Hôm nay",hanviet:"KIM NHẬT"},
+{kanji:"今週",reading:"こんしゅう",meaning:"Tuần này",hanviet:"KIM CHU"},
+{kanji:"今度",reading:"こんど",meaning:"Lần tới",hanviet:"KIM ĐỘ"},
+],
+
+"Bài 13":[
+{kanji:"東",reading:"ひがし",meaning:"Đông",hanviet:"ĐÔNG"},
+{kanji:"南",reading:"みなみ",meaning:"Nam",hanviet:"NAM"},
+{kanji:"西",reading:"にし",meaning:"Tây",hanviet:"TÂY"},
+{kanji:"北",reading:"きた",meaning:"Bắc",hanviet:"BẮC"},
+{kanji:"会社",reading:"かいしゃ",meaning:"Công ty",hanviet:"HỘI XÃ"},
+{kanji:"来ます",reading:"きます",meaning:"Đến",hanviet:"LAI"},
+{kanji:"行きます",reading:"いきます",meaning:"Đi",hanviet:"HÀNH"},
+{kanji:"乗ります",reading:"のります",meaning:"Lên xe",hanviet:"THỪA"},
+],
+
+"Bài 14":[
+{kanji:"大きい",reading:"おおきい",meaning:"To",hanviet:"ĐẠI"},
+{kanji:"小さい",reading:"ちいさい",meaning:"Nhỏ",hanviet:"TIỂU"},
+{kanji:"高い",reading:"たかい",meaning:"Cao",hanviet:"CAO"},
+{kanji:"低い",reading:"ひくい",meaning:"Thấp",hanviet:"ĐÊ"},
+{kanji:"前",reading:"まえ",meaning:"Trước",hanviet:"TIỀN"},
+{kanji:"後ろ",reading:"うしろ",meaning:"Sau",hanviet:"HẬU"},
+{kanji:"横",reading:"よこ",meaning:"Bên cạnh",hanviet:"HOÀNH"},
+],
+
+"Bài 15":[
+{kanji:"入口",reading:"いりぐち",meaning:"Cửa vào",hanviet:"NHẬP KHẨU"},
+{kanji:"出口",reading:"でぐち",meaning:"Cửa ra",hanviet:"XUẤT KHẨU"},
+{kanji:"～階",reading:"～かい／がい",meaning:"Tầng",hanviet:"GIAI"},
+{kanji:"押す",reading:"おす",meaning:"Ấn, đẩy",hanviet:"ÁP"},
+{kanji:"引く",reading:"ひきます／ひく",meaning:"Kéo",hanviet:"DẪN"},
+{kanji:"安い",reading:"やすい",meaning:"Rẻ",hanviet:"AN"},
+],
+
+"Bài 16":[
+{kanji:"一",reading:"いち",meaning:"Một",hanviet:"NHẤT"},
+{kanji:"二",reading:"に",meaning:"Hai",hanviet:"NHỊ"},
+{kanji:"三",reading:"さん",meaning:"Ba",hanviet:"TAM"},
+{kanji:"四",reading:"よん",meaning:"Bốn",hanviet:"TỨ"},
+{kanji:"五",reading:"ご",meaning:"Năm",hanviet:"NGŨ"},
+{kanji:"六",reading:"ろく",meaning:"Sáu",hanviet:"LỤC"},
+{kanji:"七",reading:"なな／しち",meaning:"Bảy",hanviet:"THẤT"},
+{kanji:"八",reading:"はち",meaning:"Tám",hanviet:"BÁT"},
+{kanji:"九",reading:"きゅう",meaning:"Chín",hanviet:"CỬU"},
+{kanji:"十",reading:"じゅう",meaning:"Mười",hanviet:"THẬP"},
+],
+
+"Bài 17":[
+{kanji:"百",reading:"ひゃく",meaning:"Trăm",hanviet:"BÁCH"},
+{kanji:"千",reading:"せん",meaning:"Nghìn",hanviet:"THIÊN"},
+{kanji:"万",reading:"まん",meaning:"Chục nghìn",hanviet:"VẠN"},
+{kanji:"円",reading:"えん",meaning:"Yên",hanviet:"VIÊN"},
+{kanji:"休み",reading:"やすみ",meaning:"Nghỉ",hanviet:"HƯU"},
+{kanji:"映画",reading:"えいが",meaning:"Phim",hanviet:"ÁNH HỌA"},
+{kanji:"日本語",reading:"にほんご",meaning:"Tiếng Nhật",hanviet:"NHẬT BẢN NGỮ"},
+{kanji:"勉強します",reading:"べんきょうします",meaning:"Học",hanviet:"MIỄN CƯỜNG"},
+{kanji:"買います",reading:"かいます",meaning:"Mua",hanviet:"MÃI"},
+],
+
+"Bài 18":[
+{kanji:"温泉",reading:"おんせん",meaning:"Suối nước nóng",hanviet:"ÔN TUYỀN"},
+{kanji:"予定",reading:"よてい",meaning:"Dự định",hanviet:"DỰ ĐỊNH"},
+{kanji:"来週",reading:"らいしゅう",meaning:"Tuần sau",hanviet:"LAI CHU"},
+{kanji:"会います",reading:"かいます",meaning:"Gặp",hanviet:"HỘI"},
+{kanji:"入ります",reading:"はいります",meaning:"Đi vào",hanviet:"NHẬP"},
+{kanji:"旅行します",reading:"りょこうします",meaning:"Du lịch",hanviet:"LỮ HÀNH"},
+],
+
+};
+
+/* ===== BIẾN ===== */
+let data=[];
+let originalData=[];
+let index=0;
+let front=true;
+let shuffled=false;
+let currentMode="";
+
+const lessonSelect=document.getElementById("lessonSelect");
+
+/* ===== BUILD ALL ===== */
+function buildAllData(){
+  const all=[];
+  Object.keys(lessons).forEach(lessonName=>{
+    const lessonNumber=lessonName.replace("Bài ","").trim();
+    lessons[lessonName].forEach(item=>{
+      all.push({...item,lessonNumber});
+    });
+  });
+  return all;
+}
+
+/* ===== RENDER ===== */
+function render(){
+  kanji.innerText=data[index].kanji;
+  reading.innerText=data[index].reading;
+  meaning.innerText=data[index].meaning;
+  kanjiReview.innerText=data[index].kanji;
+  hanviet.innerText="Hán Việt: "+data[index].hanviet;
+  counter.innerText=(index+1)+" / "+data.length;
+
+  if(currentMode==="Tất cả"){
+    lessonTag.style.display="block";
+    lessonTag.innerText="Bài: "+data[index].lessonNumber;
+  }else{
+    lessonTag.style.display="none";
+  }
+
+  showFront();
+}
+
+/* ===== CARD ===== */
+function toggleCard(e){
+  if(e) e.stopPropagation();
+  front?showBack():showFront();
+}
+function showFront(){
+  front=true;
+  document.querySelector(".front").style.display="block";
+  document.querySelector(".back").style.display="none";
+}
+function showBack(){
+  front=false;
+  document.querySelector(".front").style.display="none";
+  document.querySelector(".back").style.display="block";
+}
+
+/* ===== NAV ===== */
+function nextCard(e){
+  e.stopPropagation();
+  index=(index+1)%data.length;
+  render();
+}
+function prevCard(e){
+  e.stopPropagation();
+  index=(index-1+data.length)%data.length;
+  render();
+}
+
+/* ===== SHUFFLE ===== */
+function shuffleCards(e){
+  e.stopPropagation();
+
+  if(!shuffled){
+    for(let i=data.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [data[i],data[j]]=[data[j],data[i]];
+    }
+    shuffled=true;
+    shuffleBtn.innerText="↩";
+  }else{
+    data=originalData.map(x=>({...x}));
+    shuffled=false;
+    shuffleBtn.innerText="🔀";
+  }
+
+  index=0;
+  render();
+}
+
+/* ===== AUDIO ===== */
+function speak(){
+  const u=new SpeechSynthesisUtterance(data[index].reading);
+  u.lang="ja-JP";
+  u.rate=0.9;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+/* ===== LOAD ===== */
+function loadLesson(modeName){
+
+  shuffled=false;
+  shuffleBtn.innerText="🔀";
+  index=0;
+  front=true;
+  showFront();
+
+  currentMode=modeName;
+
+  if(modeName==="Tất cả"){
+    data=buildAllData();
+  }else{
+    const lessonNumber=modeName.replace("Bài ","").trim();
+    data=lessons[modeName].map(x=>({...x,lessonNumber}));
+  }
+
+  originalData=data.map(x=>({...x}));
+  render();
+}
+
+/* ===== INIT DROPDOWN ===== */
+function initLessons(){
+
+  const optAll=document.createElement("option");
+  optAll.value="Tất cả";
+  optAll.textContent="Tất cả";
+  lessonSelect.appendChild(optAll);
+
+  Object.keys(lessons).forEach(lessonName=>{
+    const opt=document.createElement("option");
+    opt.value=lessonName;
+    opt.textContent=lessonName;
+    lessonSelect.appendChild(opt);
+  });
+
+  /* ✅ MẶC ĐỊNH TẤT CẢ */
+  lessonSelect.value="Tất cả";
+  loadLesson("Tất cả");
+}
+
+function changeLesson(e){
+  e.stopPropagation();
+  loadLesson(lessonSelect.value);
+}
+
+initLessons();
+</script>
+
+</body>
+</html>
