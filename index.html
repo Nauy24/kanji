@@ -221,7 +221,7 @@ select{
   height:50px;
   border:none;
   border-radius:12px;
-  font-size:18px;
+  font-size:30px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -674,6 +674,8 @@ const levelShort={
 
 let data=[],index=0,front=true;
 let currentLevel="",currentLesson="";
+let isShuffled = false;
+let originalData = [];
 
 const levelSelect=document.getElementById("levelSelect");
 const lessonSelect=document.getElementById("lessonSelect");
@@ -708,9 +710,12 @@ function loadLessons(){
 }
 
 function loadCards(){
-  currentLesson=lessonSelect.value;
-  data=lessons[currentLevel][currentLesson];
-  index=0;
+  currentLesson = lessonSelect.value;
+  data = [...lessons[currentLevel][currentLesson]];
+  originalData = [...data]; // lưu bản gốc
+  index = 0;
+  isShuffled = false;
+  updateShuffleButton();
   render();
 }
 
@@ -844,24 +849,64 @@ function nextCard(e){
 function prevCard(e){
   e.stopPropagation();
 
-  const card = document.querySelector(".card");
-  const wasFlipped = card.classList.contains("flip");
+  const multi = document.getElementById("multiLesson").checked;
 
-  index = (index - 1 + data.length) % data.length;
+  if(index > 0){
+    index--;
+  }else{
+    if(multi){
+      const lessonsList = Object.keys(lessons[currentLevel]);
+      let lessonIdx = lessonsList.indexOf(currentLesson);
+
+      if(lessonIdx > 0){
+        lessonIdx--;
+      }else{
+        lessonIdx = lessonsList.length - 1;
+      }
+
+      currentLesson = lessonsList[lessonIdx];
+      lessonSelect.value = currentLesson;
+      data = lessons[currentLevel][currentLesson];
+      index = data.length - 1; // 👈 về cuối bài trước
+    }else{
+      index = data.length - 1;
+    }
+  }
 
   render();
-
-  if(wasFlipped){
-    card.classList.add("flip");
-  }
 }
 
 /* ===== SHUFFLE ===== */
 function shuffleCards(e){
   e.stopPropagation();
-  data.sort(()=>Math.random()-0.5);
-  index=0;
+
+  const btn = e.currentTarget;
+
+  if(!isShuffled){
+    data.sort(()=>Math.random()-0.5);
+    isShuffled = true;
+  }else{
+    data = [...originalData]; // trả về thứ tự ban đầu
+    isShuffled = false;
+  }
+
+  index = 0;
+  updateShuffleButton();
   render();
+}
+
+function updateShuffleButton(){
+  const btn = document.querySelector(".controls button:nth-child(4)");
+
+  if(isShuffled){
+    btn.style.background = "#2f5d62";
+    btn.style.color = "white";
+    btn.style.transform = "scale(1.05)";
+  }else{
+    btn.style.background = "#9dc5c3";
+    btn.style.color = "black";
+    btn.style.transform = "scale(1)";
+  }
 }
 
 /* ===== AUDIO ===== */
